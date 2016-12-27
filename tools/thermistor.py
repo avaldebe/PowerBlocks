@@ -51,24 +51,26 @@ class Temperature(SI_param):
 
 class NTC(object):
     """Generig NTC"""
-    def __init__(self, R0=10, B=3977, T0=298.15, T1=323.15):
+    def __init__(self, R0, B, T0=298.15, T1=323.15):
         """Basic NTC parameters"""
         self.R0 = float(R0)   # resistence at T0 in [kOhm]
         self.B = float(B)     # beta(T0/T1) coefficient in [K]
         self.T0 = float(T0)   # 25 [*C] in [*K]
         self.T1 = float(T1)   # 50 [*C] in [*K]
+#       self.R1 = self.resistance(self.T1,'K')
 
     def temperature(self, R, r_unit='kohm', t_unit='C'):
         """resistance R [kohm] to temperature [unit]"""
-        r_kohm = Resistance(R,r_unit).unit('kohm')
+        r_kohm = Resistance(R, r_unit).unit('kohm')
         temp_inv = numpy.log(r_kohm/self.R0)/self.B + 1/self.T0
         return Temperature(1/temp_inv, 'K').unit(t_unit)
 
-    def reststance(self, T, unit='C'):
+    def reststance(self, T, r_unit='kohm', t_unit='C'):
         """temperature [unit] to resistance R [kOhm] """
-        temp = Temperature(T, unit).unit('K')
+        temp = Temperature(T, t_unit).unit('K')
         temp = 1/temp - 1/self.T0
-        return numpy.exp(self.B*temp)
+        r_kohm = numpy.exp(self.B*temp)
+        return Resistance(r_kohm, 'kohm').unit(r_unit)
 
 
 class TTC05(NTC):
