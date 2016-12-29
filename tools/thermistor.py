@@ -4,8 +4,7 @@
 NTC thermistor class
 
 TODO:
-- voltage calculation for R_bias, R_load, R_bridge NTC configurations
-- test temperature conversions
+- voltage calculation for R_load, R_bridge NTC configurations
 """
 from __future__ import print_function
 import numpy
@@ -27,10 +26,10 @@ class SI_param(object):
     def __str__(self):
         return '%g %s'%(self._value, self._unit)
     def __hash__(self):
-        return hash(str(self))
+        return hash(self.convert_unit(self._value, self._unit, self._unit_default))
     def __eq__(self, other):
         if isinstance(other, type(self)):
-            return float(self) == float(other.unit(self))
+            return round(float(self) - float(other.unit(self)),6) == 0
         else:
             return False
     def __ne__(self, other):
@@ -68,14 +67,22 @@ class Temperature(SI_param):
     @staticmethod
     def test():
         """Check unit conversions"""
-        pass
+        K, C, F = Temperature(323.15,'K'), Temperature(50,'C'), Temperature(122,'F')
+        print('Test %s:\n  K=%s, C=%s, F=%s'%("Temp. conversion", K, C, F))
+        test = dict(
+            K=[C, F].count(K),
+            C=[K, F].count(C),
+            F=[K, C].count(F),
+        )
+        for key, val in test.items():
+            assert val == 2, "  Failed %s conversion"%key
 
 class OHM_param(SI_param):
     """
     Ohm's law objects: resistence, voltage and current
     """
     @staticmethod
-    def ohms_law(R=None, I=None, V=None, unit=None):
+    def _ohms_law(R=None, I=None, V=None, unit=None):
         """calculate missing R|I|V as function ofthe other 2"""
         assert [R, I, V].count(None) == 1, "Wrong number of arguments"
         assert R is None or isinstance(R, Resistance), "R should be Resistance"
@@ -93,25 +100,25 @@ class OHM_param(SI_param):
     # Ohms law
     def voltage(self, param, unit='mV'):
         if isinstance(self, Resistance):
-            return self.ohms_law(R=self, I=param, unit=unit)
+            return self._ohms_law(R=self, I=param, unit=unit)
         elif isinstance(self, Current):
-            return self.ohms_law(I=self, R=param, unit=unit)
+            return self._ohms_law(I=self, R=param, unit=unit)
         else:
             print("Wrong type %s"%type(self))
             raise TypeError
     def current(self, param, unit='mA'):
         if isinstance(self, Resistance):
-            return self.ohms_law(R=self, V=param, unit=unit)
+            return self._ohms_law(R=self, V=param, unit=unit)
         elif isinstance(self, Voltage):
-            return self.ohms_law(V=self, R=param, unit=unit)
+            return self._ohms_law(V=self, R=param, unit=unit)
         else:
             print("Wrong type %s"%type(self))
             raise TypeError
     def resistance(self, param, unit='kΩ'):
         if isinstance(self, Current):
-            return self.ohms_law(I=self, V=param, unit=unit)
+            return self._ohms_law(I=self, V=param, unit=unit)
         elif isinstance(self, Voltage):
-            return self.ohms_law(V=self, I=param, unit=unit)
+            return self._ohms_law(V=self, I=param, unit=unit)
         else:
             print("Wrong type %s"%type(self))
             raise TypeError
@@ -119,7 +126,7 @@ class OHM_param(SI_param):
     def test():
         """Check unit conversions and Ohm's Law calculations"""
         V, I, R = Voltage(15,'V'), Current(5,'mA'), Resistance(3,'kΩ')
-        print('Test %s:\n  V=%s, I=%s, R=%s'%("Ohm's Law",V, I, R))
+        print('Test %s:\n  V=%s, I=%s, R=%s'%("Ohm's Law", V, I, R))
         test = dict(
             V=[I.voltage(R), R.voltage(I)].count(V),
             I=[V.current(R), R.current(V)].count(I),
@@ -187,7 +194,7 @@ class NTC(object):
         temp_inv = numpy.log(r_kohm/self.R0)/self.B + 1/self.T0
         return Temperature.convert_unit(1/temp_inv, 'K', t_unit)
 
-    def reststance(self, T, r_unit='kΩ', t_unit='C'):
+    def resistance(self, T, r_unit='kΩ', t_unit='C'):
         """temperature [unit] to resistance R [kΩ] """
         temp = Temperature.convert_unit(T, t_unit, 'K')
         temp = 1/temp - 1/self.T0
@@ -254,7 +261,7 @@ if __name__ == '__main__':
         ntc=TTC05(ntc)
         print("%s"%ntc)
         catalog[ntc.name] = pandas.Series(
-            ntc.reststance(catalog.index, 'Ω'),
+            ntc.resistance(catalog.index, 'Ω'),
             index=catalog.index,
         )
 
