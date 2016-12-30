@@ -11,25 +11,27 @@ Meter Block
 -----------
 
 Voltage and Current meter/display.
-* Modules
+
+Modules
     * Panel meter
-* Assemblies
+Assemblies
     * Power input
-	* Load input & switch
-* Other
+  	* Load input & switch
+Other
     * Battery
-	* Case
+    * Case
 
 Logger Block
 ------------
 
 Voltage and Current (headless) logger
-* Modules
-    * Microcontroller 
-	* ADC module
-	* Current sensor/module
-* Assemblies
+
+Modules
+    * Microcontroller
+    * ADC module
+    * Current sensor/module
+Assemblies
     * Power input
-* Other
+Other
     * Battery
-	* Case
+  	* Case
